@@ -11,6 +11,9 @@ const chalk = require('chalk');
 const path = require('path');
 const os = require('os');
 
+// Added MIT-licensed library micromatch for pattern matching
+const micromatch = require('micromatch');
+
 class ModuleScopePlugin {
   constructor(appSrc, allowedFiles = []) {
     this.appSrcs = Array.isArray(appSrc) ? appSrc : [appSrc];
@@ -18,60 +21,55 @@ class ModuleScopePlugin {
     this.allowedPaths = [...allowedFiles]
       .map(path.dirname)
       .filter(p => path.relative(p, process.cwd()) !== '');
+
+    // Example: create glob patterns for allowedPaths to use micromatch
+    this.allowedPathPatterns = this.allowedPaths.map(p => `${p}/**`);
   }
 
   apply(resolver) {
-    const { appSrcs } = this;
+    const { appSrcs, allowedPathPatterns, allowedFiles } = this;
     resolver.hooks.file.tapAsync(
       'ModuleScopePlugin',
       (request, contextResolver, callback) => {
-        // Unknown issuer, probably webpack internals
         if (!request.context.issuer) {
           return callback();
         }
+
         if (
-          // If this resolves to a node_module, we don't care what happens next
           request.descriptionFileRoot.indexOf('/node_modules/') !== -1 ||
           request.descriptionFileRoot.indexOf('\\node_modules\\') !== -1 ||
-          // Make sure this request was manual
           !request.__innerRequest_request
         ) {
           return callback();
         }
-        // Resolve the issuer from our appSrc and make sure it's one of our files
-        // Maybe an indexOf === 0 would be better?
+
         if (
           appSrcs.every(appSrc => {
             const relative = path.relative(appSrc, request.context.issuer);
-            // If it's not in one of our app src or a subdirectory, not our request!
             return relative.startsWith('../') || relative.startsWith('..\\');
           })
         ) {
           return callback();
         }
+
         const requestFullPath = path.resolve(
           path.dirname(request.context.issuer),
           request.__innerRequest_request
         );
-        if (this.allowedFiles.has(requestFullPath)) {
+
+        if (allowedFiles.has(requestFullPath)) {
           return callback();
         }
-        if (
-          this.allowedPaths.some(allowedFile => {
-            return requestFullPath.startsWith(allowedFile);
-          })
-        ) {
+
+        // Use micromatch to check if requestFullPath matches any allowed path patterns
+        if (allowedPathPatterns.some(pattern => micromatch.isMatch(requestFullPath, pattern))) {
           return callback();
         }
-        // Find path from src to the requested file
-        // Error if in a parent directory of all given appSrcs
+
         if (
           appSrcs.every(appSrc => {
             const requestRelative = path.relative(appSrc, requestFullPath);
-            return (
-              requestRelative.startsWith('../') ||
-              requestRelative.startsWith('..\\')
-            );
+            return requestRelative.startsWith('../') || requestRelative.startsWith('..\\');
           })
         ) {
           const scopeError = new Error(

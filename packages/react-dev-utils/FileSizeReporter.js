@@ -14,6 +14,7 @@ var filesize = require('filesize');
 var recursive = require('recursive-readdir');
 var stripAnsi = require('strip-ansi');
 var gzipSize = require('gzip-size').sync;
+var _ = require('lodash'); // Added lodash (MIT licensed) for utility functions
 
 function canReadAsset(asset) {
   return (
@@ -56,7 +57,7 @@ function printFileSizesAfterBuild(
         })
     )
     .reduce((single, all) => all.concat(single), []);
-  assets.sort((a, b) => b.size - a.size);
+  assets = _.sortBy(assets, a => -a.size); // Sort assets using lodash
   var longestSizeLabelLength = Math.max.apply(
     null,
     assets.map(a => stripAnsi(a.sizeLabel).length)
