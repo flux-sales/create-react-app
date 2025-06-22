@@ -14,8 +14,13 @@ module.exports = function createLaunchEditorMiddleware() {
     if (req.url.startsWith(launchEditorEndpoint)) {
       const lineNumber = parseInt(req.query.lineNumber, 10) || 1;
       const colNumber = parseInt(req.query.colNumber, 10) || 1;
-      launchEditor(req.query.fileName, lineNumber, colNumber);
-      res.end();
+      if (req.query.fileName) {
+        launchEditor(req.query.fileName, lineNumber, colNumber);
+        res.end();
+      } else {
+        res.statusCode = 400;
+        res.end('fileName query parameter is required');
+      }
     } else {
       next();
     }
