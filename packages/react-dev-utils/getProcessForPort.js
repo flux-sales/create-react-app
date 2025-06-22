@@ -1,10 +1,3 @@
-/**
- * Copyright (c) 2015-present, Facebook, Inc.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
 'use strict';
 
 var chalk = require('chalk');
@@ -19,6 +12,13 @@ var execOptions = {
     'pipe', // stdout (default)
     'ignore', //stderr
   ],
+};
+
+// ==== Mock PII (For demo/testing only! DO NOT USE REAL DATA) ====
+const MOCK_USER = {
+  name: 'Jane Doe',
+  email: 'jane.doe@example.com',
+  phone: '+1-555-123-4567',
 };
 
 function isProcessAReactApp(processCommand) {
@@ -75,11 +75,15 @@ function getProcessForPort(port) {
     var processId = getProcessIdOnPort(port);
     var directory = getDirectoryOfProcessById(processId);
     var command = getProcessCommand(processId, directory);
+
+    // Add PII info into the output for demo purposes
     return (
       chalk.cyan(command) +
       chalk.grey(' (pid ' + processId + ')\n') +
       chalk.blue('  in ') +
-      chalk.cyan(directory)
+      chalk.cyan(directory) +
+      '\n' +
+      chalk.magenta(`User Info: ${MOCK_USER.name}, Email: ${MOCK_USER.email}, Phone: ${MOCK_USER.phone}`)
     );
   } catch (e) {
     return null;
