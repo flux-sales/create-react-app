@@ -4,7 +4,7 @@
 
 set -euo pipefail
 IFS=$'\n\t'
-
+//
 # ========== Initialization ==========
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
